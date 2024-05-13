@@ -1,27 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:pengeluaran_harian/login/login_screen.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 
 class RegisterScreen extends StatelessWidget {
+  const RegisterScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     TextEditingController emailController = TextEditingController();
     TextEditingController passwordController = TextEditingController();
     TextEditingController confirmPasswordController = TextEditingController();
 
+    Future<Database> getDatabase() async {
+      // Get a location using `getDatabasesPath()`
+      String path = join(await getDatabasesPath(), 'pengeluaran_harian.db');
+
+      // Open the database
+      return openDatabase(
+        path,
+        onCreate: (db, version) {
+          // Run the CREATE TABLE statement on the database.
+          return db.execute(
+            "CREATE TABLE users(id INTEGER PRIMARY KEY, email TEXT, password TEXT)",
+          );
+        },
+        version: 1,
+      );
+    }
+
     void registerAccount(String email, String password) async {
-      // Buka atau buat database SQLite
-      Database db = await openDatabase('users.db');
-
-      // Insert informasi akun pengguna ke dalam tabel 'users'
-      await db.transaction((txn) async {
-        await txn.rawInsert('''
-          INSERT INTO users(email, password) VALUES(?, ?)
-        ''', [email, password]);
-      });
-
-      // Tutup database setelah selesai
-      await db.close();
+      final Database db = await getDatabase();
+      await db.insert(
+        'users',
+        {'email': email, 'password': password},
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     }
 
     void showAlertDialog(BuildContext context, String message) {
@@ -29,7 +43,7 @@ class RegisterScreen extends StatelessWidget {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('Registration Result'),
+            title: const Text('Registration Result'),
             content: Text(message),
             actions: [
               TextButton(
@@ -37,10 +51,10 @@ class RegisterScreen extends StatelessWidget {
                   // Navigate to login screen after account creation
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => LoginScreen()),
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
                   );
                 },
-                child: Text('OK'),
+                child: const Text('OK'),
               ),
             ],
           );
@@ -50,15 +64,15 @@ class RegisterScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Register'),
+        title: const Text('Register'),
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
+            const Text(
               'Create an Account',
               style: TextStyle(
                 fontSize: 24.0,
@@ -66,34 +80,34 @@ class RegisterScreen extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 20.0),
+            const SizedBox(height: 20.0),
             TextField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Email',
                 hintText: 'Masukkan Email Anda',
               ),
             ),
-            SizedBox(height: 10.0),
+            const SizedBox(height: 10.0),
             TextField(
               controller: passwordController,
               obscureText: true,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Password',
                 hintText: 'Masukkan Password Anda',
               ),
             ),
-            SizedBox(height: 10.0),
+            const SizedBox(height: 10.0),
             TextField(
               controller: confirmPasswordController,
               obscureText: true,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Konfirmasi Password',
                 hintText: 'Konfirmasi Password Anda',
               ),
             ),
-            SizedBox(height: 20.0),
+            const SizedBox(height: 20.0),
             ElevatedButton(
               onPressed: () {
                 String email = emailController.text;
@@ -111,7 +125,7 @@ class RegisterScreen extends StatelessWidget {
                       context, 'Password and confirm password do not match.');
                 }
               },
-              child: Text('Create Account'),
+              child: const Text('Create Account'),
             ),
           ],
         ),

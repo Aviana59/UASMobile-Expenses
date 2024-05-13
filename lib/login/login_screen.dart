@@ -2,40 +2,50 @@ import 'package:flutter/material.dart';
 import 'package:pengeluaran_harian/login/register_screen.dart';
 import 'package:pengeluaran_harian/main.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 
 class LoginScreen extends StatelessWidget {
+  const LoginScreen({super.key});
+
+  Future<Database> getDatabase() async {
+    String path = join(await getDatabasesPath(), 'pengeluaran_harian.db');
+    return openDatabase(
+      path,
+      onCreate: (db, version) {
+        return db.execute(
+          "CREATE TABLE users(id INTEGER PRIMARY KEY, email TEXT, password TEXT)",
+        );
+      },
+      version: 1,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     TextEditingController emailController = TextEditingController();
     TextEditingController passwordController = TextEditingController();
 
     Future<bool> login(String email, String password) async {
-      // Buka atau buat database SQLite
-      Database db = await openDatabase('users.db');
-
-      // Query database untuk memeriksa apakah pengguna terdaftar
-      List<Map> result = await db.rawQuery('''
-        SELECT * FROM users WHERE email = ? AND password = ?
-      ''', [email, password]);
-
-      // Tutup database setelah selesai
-      await db.close();
-
-      // Return true jika pengguna ditemukan, false jika tidak ditemukan
-      return result.isNotEmpty;
+      final Database db = await getDatabase();
+      List<Map<String, dynamic>> users = await db.query(
+        'users',
+        where: 'email = ? AND password = ?',
+        whereArgs: [email, password],
+      );
+      return users.isNotEmpty;
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Login'),
+        title: const Text('Login'),
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
+            const Text(
               'Mbuh Pusing Aku!!',
               style: TextStyle(
                 fontSize: 24.0,
@@ -43,52 +53,54 @@ class LoginScreen extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 20.0),
+            const SizedBox(height: 20.0),
             TextField(
-              controller:
-                  emailController, // Tambahkan controller untuk TextField email
+              controller: emailController, // Tambahkan controller
               keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Email',
                 hintText: 'Masukkan Email Anda',
               ),
             ),
-            SizedBox(height: 10.0),
+            const SizedBox(height: 10.0),
             TextField(
-              controller:
-                  passwordController, // Tambahkan controller untuk TextField password
+              controller: passwordController, // Tambahkan controller
               obscureText: true,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Password',
                 hintText: 'Masukkan Password Anda',
               ),
             ),
-            SizedBox(height: 20.0),
+            const SizedBox(height: 20.0),
             ElevatedButton(
               onPressed: () async {
-                String email = emailController.text;
-                String password = passwordController.text;
-                bool loggedIn = await login(email,
-                    password); // Panggil fungsi login dengan email dan password yang dimasukkan
+                String email =
+                    emailController.text; // Ambil nilai dari controller
+                String password =
+                    passwordController.text; // Ambil nilai dari controller
+                bool loggedIn = await login(email, password);
                 if (loggedIn) {
                   Navigator.pushReplacement(
+                    // ignore: use_build_context_synchronously
                     context,
-                    MaterialPageRoute(builder: (context) => MyApp()),
+                    MaterialPageRoute(
+                        builder: (context) => const ExpenseListScreen()),
                   );
                 } else {
                   // Show dialog if account does not exist
                   showDialog(
+                    // ignore: use_build_context_synchronously
                     context: context,
                     builder: (BuildContext context) {
                       return AlertDialog(
-                        title: Text('Akun belum terdaftar!'),
-                        content: Text('Gae Akun anyar ta?'),
+                        title: const Text('Akun belum terdaftar!'),
+                        content: const Text('Gae Akun anyar ta?'),
                         actions: [
                           TextButton(
                             onPressed: () {
                               Navigator.of(context).pop();
                             },
-                            child: Text('Gak wes'),
+                            child: const Text('Gak wes'),
                           ),
                           TextButton(
                             onPressed: () {
@@ -96,10 +108,11 @@ class LoginScreen extends StatelessWidget {
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => RegisterScreen()),
+                                    builder: (context) =>
+                                        const RegisterScreen()),
                               );
                             },
-                            child: Text('Create Account'),
+                            child: const Text('Create Account'),
                           ),
                         ],
                       );
@@ -107,24 +120,25 @@ class LoginScreen extends StatelessWidget {
                   );
                 }
               },
-              child: Text('Login'),
+              child: const Text('Login'),
             ),
             TextButton(
               onPressed: () {
                 // Handle forgot password button pressed
               },
-              child: Text('Forgot Password?'),
+              child: const Text('Forgot Password?'),
             ),
-            SizedBox(height: 10.0),
+            const SizedBox(height: 10.0),
             TextButton(
               onPressed: () {
                 // Navigate to registration screen
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => RegisterScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const RegisterScreen()),
                 );
               },
-              child: Text('Sign Up'),
+              child: const Text('Sign Up'),
             ),
           ],
         ),
