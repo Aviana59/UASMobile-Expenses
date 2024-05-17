@@ -94,13 +94,13 @@ class LoginScreen extends StatelessWidget {
                     builder: (BuildContext context) {
                       return AlertDialog(
                         title: const Text('Akun belum terdaftar!'),
-                        content: const Text('Gae Akun anyar ta?'),
+                        content: const Text('Buat akun baru?'),
                         actions: [
                           TextButton(
                             onPressed: () {
                               Navigator.of(context).pop();
                             },
-                            child: const Text('Gak wes'),
+                            child: const Text('Back'),
                           ),
                           TextButton(
                             onPressed: () {
@@ -121,12 +121,6 @@ class LoginScreen extends StatelessWidget {
                 }
               },
               child: const Text('Login'),
-            ),
-            TextButton(
-              onPressed: () {
-                // Handle forgot password button pressed
-              },
-              child: const Text('Forgot Password?'),
             ),
             const SizedBox(height: 10.0),
             TextButton(

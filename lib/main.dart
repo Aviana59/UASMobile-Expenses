@@ -107,6 +107,21 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     _loadExpenses();
   }
 
+  Future<void> _editExpense(int id, String title, double amount) async {
+    final updatedExpense = Expense(
+      id: id,
+      title: title,
+      amount: amount,
+    );
+    await _database.update(
+      'expenses',
+      updatedExpense.toMap(),
+      where: "id = ?",
+      whereArgs: [id],
+    );
+    _loadExpenses();
+  }
+
   Future<void> _removeExpense(int id) async {
     await _database.delete(
       'expenses',
@@ -121,6 +136,14 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pengeluaran harian'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              Navigator.pushReplacementNamed(context, '/');
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -132,9 +155,18 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                 return ListTile(
                   title: Text(expense.title),
                   subtitle: Text(expense.amount.toString()),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () => _removeExpense(expense.id),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () => _showEditExpenseDialog(context, expense),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () => _removeExpense(expense.id),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -244,6 +276,49 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               Navigator.of(ctx).pop();
             },
             child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showEditExpenseDialog(BuildContext context, Expense expense) async {
+    TextEditingController titleController = TextEditingController(text: expense.title);
+    TextEditingController amountController = TextEditingController(text: expense.amount.toString());
+
+    return showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Expense'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            TextField(
+              controller: amountController,
+              decoration: const InputDecoration(labelText: 'Amount'),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final title = titleController.text;
+              final amount = double.parse(amountController.text);
+              _editExpense(expense.id, title, amount);
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Save'),
           ),
         ],
       ),
