@@ -1,8 +1,8 @@
 import 'dart:math';
-
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:pengeluaran_harian/components/chart.dart';
+
 import 'package:pengeluaran_harian/login/login_screen.dart';
 import 'package:pengeluaran_harian/login/register_screen.dart';
 import 'package:sqflite/sqflite.dart';
@@ -18,7 +18,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Pengeluaran harian',
+      debugShowCheckedModeBanner: false, // Menghilangkan banner debug
+      title: 'My Expenses',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -52,13 +53,13 @@ class ExpenseListScreen extends StatefulWidget {
   const ExpenseListScreen({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _ExpenseListScreenState createState() => _ExpenseListScreenState();
 }
 
 class _ExpenseListScreenState extends State<ExpenseListScreen> {
   late Database _database;
   List<Expense> _expenses = [];
+  List<Map<String, dynamic>> _expensesData = [];
 
   @override
   void initState() {
@@ -89,6 +90,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
           amount: maps[i]['amount'],
         );
       });
+      _expensesData = maps;
     });
   }
 
@@ -134,46 +136,74 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pengeluaran harian'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/');
-            },
-          ),
-        ],
-      ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: _expenses.length,
-              itemBuilder: (ctx, index) {
-                final expense = _expenses[index];
-                return ListTile(
-                  title: Text(expense.title),
-                  subtitle: Text(expense.amount.toString()),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => _showEditExpenseDialog(context, expense),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => _removeExpense(expense.id),
-                      ),
-                    ],
-                  ),
-                );
-              },
+          // Background image
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('images/pengeluaran.png'),
+                fit: BoxFit.cover,
+              ),
             ),
           ),
-          _buildTotalExpense(),
-          _buildLineChart(),
+          // Semi-transparent overlay
+          Container(
+            color: Colors.black.withOpacity(0.6),
+          ),
+          Column(
+            children: [
+              AppBar(
+                title: const Text('Pengeluaran Harian'),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.logout),
+                    onPressed: () {
+                      Navigator.pushReplacementNamed(context, '/');
+                    },
+                  ),
+                ],
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _expenses.length,
+                  itemBuilder: (ctx, index) {
+                    final expense = _expenses[index];
+                    return Card(
+                      color: Colors.white.withOpacity(0.9),
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 8.0, horizontal: 16.0),
+                      child: ListTile(
+                        title: Text(expense.title),
+                        subtitle: Text(
+                          'Rp ${expense.amount.toString()}',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () =>
+                                  _showEditExpenseDialog(context, expense),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete),
+                              onPressed: () => _removeExpense(expense.id),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              _buildTotalExpense(),
+              BarChartSample3(
+                data: _expensesData,
+              )
+            ],
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -192,51 +222,10 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
       padding: const EdgeInsets.all(8.0),
       child: Text(
         'Total Pengeluaran: ${NumberFormat.currency(locale: 'id_ID', symbol: 'Rp').format(totalExpense)}',
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+            fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
       ),
     );
-  }
-
-  Widget _buildLineChart() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: SizedBox(
-        height: 200,
-        child: LineChart(
-          LineChartData(
-            gridData: FlGridData(show: false),
-            titlesData: FlTitlesData(show: false),
-            borderData: FlBorderData(show: true),
-            lineBarsData: [
-              LineChartBarData(
-                spots: _expenses
-                    .asMap()
-                    .entries
-                    .map((entry) =>
-                        FlSpot(entry.key.toDouble(), entry.value.amount))
-                    .toList(),
-                isCurved: true,
-                colors: [Colors.blue],
-                barWidth: 2,
-                isStrokeCapRound: true,
-                belowBarData: BarAreaData(show: false),
-              ),
-            ],
-            minX: 0,
-            maxX: _expenses.length.toDouble() - 1,
-            minY: 0,
-            maxY: _calculateMaxAmount(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  double _calculateMaxAmount() {
-    if (_expenses.isEmpty) return 0;
-    return _expenses
-        .map((expense) => expense.amount)
-        .reduce((a, b) => a > b ? a : b);
   }
 
   Future<void> _showAddExpenseDialog(BuildContext context) async {
@@ -282,9 +271,12 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
     );
   }
 
-  Future<void> _showEditExpenseDialog(BuildContext context, Expense expense) async {
-    TextEditingController titleController = TextEditingController(text: expense.title);
-    TextEditingController amountController = TextEditingController(text: expense.amount.toString());
+  Future<void> _showEditExpenseDialog(
+      BuildContext context, Expense expense) async {
+    TextEditingController titleController =
+        TextEditingController(text: expense.title);
+    TextEditingController amountController =
+        TextEditingController(text: expense.amount.toString());
 
     return showDialog(
       context: context,
